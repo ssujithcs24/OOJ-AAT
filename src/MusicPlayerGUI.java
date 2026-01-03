@@ -20,6 +20,13 @@ public class MusicPlayerGUI extends JFrame {
         currentPlaylist.addSong(new Song("Blinding Lights", "The Weeknd", 200));
         currentPlaylist.addSong(new Song("Levitating", "Dua Lipa", 203));
         currentPlaylist.addSong(new Song("Believer", "Imagine Dragons", 210));
+        currentPlaylist.addSong(new Song("Watermelon Sugar", "Harry Styles", 174));
+        currentPlaylist.addSong(new Song("Peaches", "Justin Bieber", 198));
+        currentPlaylist.addSong(new Song("Save Your Tears", "The Weeknd", 215));
+        currentPlaylist.addSong(new Song("Good 4 U", "Olivia Rodrigo", 178));
+        currentPlaylist.addSong(new Song("Montero", "Lil Nas X", 137));
+        currentPlaylist.addSong(new Song("Stay", "Justin Bieber", 141));
+        currentPlaylist.addSong(new Song("Kiss Me More", "Doja Cat", 208));
 
         setTitle("Music Playlist Manager");
         setSize(800, 600);
