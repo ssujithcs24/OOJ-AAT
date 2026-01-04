@@ -2,13 +2,93 @@ import java.awt.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-public class MusicPlayerGUI extends JFrame
-{
+public class MusicPlayerGUI extends JFrame {
+
     private PlaylistManager manager;
     private Playlist currentPlaylist;
-    private DefaultListModel<String> listModel;
-    private JList<String> songList;
+
+    private DefaultListModel<Song> listModel;
+    private JList<Song> songList;
     private JTextArea nowPlayingArea;
+
+    // ---------- CIRCULAR BUTTON ----------
+    static class CircleButton extends JButton {
+        public CircleButton(String text, Color bg, Color fg, Font font) {
+            super(text);
+            setFont(font);
+            setForeground(fg);
+            setBackground(bg);
+            setFocusPainted(false);
+            setBorderPainted(false);
+            setContentAreaFilled(false);
+            setPreferredSize(new Dimension(55, 55));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            if (getModel().isArmed())
+                g2.setColor(getBackground().darker());
+            else
+                g2.setColor(getBackground());
+
+            g2.fillOval(0, 0, getWidth(), getHeight());
+            g2.dispose();
+            super.paintComponent(g);
+        }
+
+        @Override
+        public boolean contains(int x, int y) {
+            int r = getWidth() / 2;
+            return Math.pow(x - r, 2) + Math.pow(y - r, 2) <= r * r;
+        }
+    }
+
+    // ---------- SONG CELL RENDERER ----------
+    static class SongRenderer extends JPanel implements ListCellRenderer<Song> {
+
+        private JLabel titleLabel = new JLabel();
+        private JLabel artistLabel = new JLabel();
+
+        public SongRenderer() {
+            setLayout(new BorderLayout());
+            setBorder(new EmptyBorder(8, 12, 8, 12));
+
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 15));
+            artistLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            artistLabel.setForeground(new Color(180, 180, 180));
+
+            add(titleLabel, BorderLayout.NORTH);
+            add(artistLabel, BorderLayout.SOUTH);
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getListCellRendererComponent(
+                JList<? extends Song> list,
+                Song song,
+                int index,
+                boolean isSelected,
+                boolean cellHasFocus) {
+
+            titleLabel.setText(song.getTitle());
+            artistLabel.setText(song.getArtist());
+
+            if (isSelected) {
+                setBackground(new Color(30, 215, 96));
+                titleLabel.setForeground(Color.BLACK);
+                artistLabel.setForeground(Color.BLACK);
+            } else {
+                setBackground(new Color(30, 30, 30));
+                titleLabel.setForeground(Color.WHITE);
+                artistLabel.setForeground(new Color(180, 180, 180));
+            }
+            return this;
+        }
+    }
+
     public MusicPlayerGUI() {
 
         // ---------- THEME ----------
@@ -17,14 +97,9 @@ public class MusicPlayerGUI extends JFrame
         Color accentGreen = new Color(30, 215, 96);
         Color textWhite = Color.WHITE;
 
-        Font uiFont = new Font("Segoe UI", Font.PLAIN, 14);
-        Font titleFont = new Font("Segoe UI", Font.BOLD, 15);
         Font controlFont = new Font("Segoe UI Symbol", Font.BOLD, 18);
 
-        UIManager.put("Button.background", panelDark);
-        UIManager.put("Button.foreground", textWhite);
         UIManager.put("Panel.background", bgDark);
-        UIManager.put("Label.foreground", textWhite);
 
         getContentPane().setBackground(bgDark);
 
@@ -53,51 +128,35 @@ public class MusicPlayerGUI extends JFrame
 
         // ---------- SONG LIST ----------
         listModel = new DefaultListModel<>();
-        for (Song s : currentPlaylist.getSongs()) {
-            listModel.addElement(s.toString());
-        }
+        for (Song s : currentPlaylist.getSongs())
+            listModel.addElement(s);
 
         songList = new JList<>(listModel);
-        songList.setFont(uiFont);
+        songList.setCellRenderer(new SongRenderer());
         songList.setBackground(panelDark);
-        songList.setForeground(textWhite);
-        songList.setSelectionBackground(accentGreen);
-        songList.setSelectionForeground(Color.BLACK);
-        songList.setBorder(new EmptyBorder(10, 10, 10, 10));
+        songList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         JScrollPane songScroll = new JScrollPane(songList);
-        songScroll.setBorder(null); // removes middle divider
+        songScroll.setBorder(null);
         add(songScroll, BorderLayout.CENTER);
 
         // ---------- NOW PLAYING ----------
         nowPlayingArea = new JTextArea("Now Playing:\n");
         nowPlayingArea.setEditable(false);
-        nowPlayingArea.setFont(titleFont);
+        nowPlayingArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         nowPlayingArea.setBackground(panelDark);
         nowPlayingArea.setForeground(textWhite);
-        nowPlayingArea.setCaretColor(textWhite);
         nowPlayingArea.setBorder(new EmptyBorder(15, 15, 15, 15));
 
         JScrollPane nowPlayingScroll = new JScrollPane(nowPlayingArea);
         nowPlayingScroll.setPreferredSize(new Dimension(260, 0));
-        nowPlayingScroll.setBorder(null); // removes divider
+        nowPlayingScroll.setBorder(null);
         add(nowPlayingScroll, BorderLayout.EAST);
 
         // ---------- CONTROLS ----------
-        JButton prevBtn = new JButton("⏮");
-        JButton playBtn = new JButton("▶");
-        JButton nextBtn = new JButton("⏭");
-
-        prevBtn.setFont(controlFont);
-        playBtn.setFont(controlFont);
-        nextBtn.setFont(controlFont);
-
-        playBtn.setBackground(accentGreen);
-        playBtn.setForeground(Color.BLACK);
-
-        prevBtn.setFocusPainted(false);
-        playBtn.setFocusPainted(false);
-        nextBtn.setFocusPainted(false);
+        CircleButton prevBtn = new CircleButton("⏮", panelDark, textWhite, controlFont);
+        CircleButton playBtn = new CircleButton("▶", accentGreen, Color.BLACK, controlFont);
+        CircleButton nextBtn = new CircleButton("⏭", panelDark, textWhite, controlFont);
 
         prevBtn.addActionListener(e -> playPrevious());
         playBtn.addActionListener(e -> playNext());
@@ -105,7 +164,7 @@ public class MusicPlayerGUI extends JFrame
 
         JPanel controlPanel = new JPanel();
         controlPanel.setBackground(bgDark);
-        controlPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        controlPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
         controlPanel.add(prevBtn);
         controlPanel.add(playBtn);
         controlPanel.add(nextBtn);
